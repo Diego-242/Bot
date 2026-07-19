@@ -4,3 +4,5 @@ test_get.js
 test.js
 package-lock.json
 limit.js
+README.md
+*.gitignore
