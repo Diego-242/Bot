@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 const pedidoSchema = {
     type: 'object',
     additionalProperties: false,
@@ -39,7 +42,15 @@ function normalizarPedidos(pedidos) {
 }
 
 export const extraerPedidoConIA = async (textoDelCliente) => {
-    const prompt = `
+
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+    if (!GEMINI_API_KEY) {
+        console.error("❌ FATAL: Falta GEMINI_API_KEY en el archivo .env");
+        return [];
+    }
+
+    const promptDefensivo = `
         Eres un extractor de pedidos de cualquier tipo de negocio.
 
         Devuelve exclusivamente el objeto JSON solicitado por el esquema.
@@ -182,51 +193,54 @@ export const extraerPedidoConIA = async (textoDelCliente) => {
     `;
 
     try {
-        console.log('🧠 Consultando a Ollama...');
-        const respuesta = await fetch('http://localhost:11434/api/generate', {
+        console.log('🧠 Consultando a Gemini...');
+
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+        const respuesta = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                model: 'qwen3.5',
-                prompt,
-                stream: false,
-                format: pedidoSchema,
-                options: { temperature: 0 }
+                contents: [{
+                    parts: [{ text: promptDefensivo }]
+                }],
+                // MAGIA DE GOOGLE: Esto fuerza al modelo a devolver JSON puro siempre
+                generationConfig: {
+                    response_mime_type: "application/json" 
+                }
             })
         });
 
         if (!respuesta.ok) {
-            console.error(`🚨 Ollama respondió HTTP ${respuesta.status}`);
+            console.error(`🚨 Gemini respondió HTTP ${respuesta.status}`);
             return [];
         }
 
         const datos = await respuesta.json();
         if (datos.error) {
-            console.error('🚨 Error interno de Ollama:', datos.error);
+            console.error('🚨 Error interno de Google:', datos.error);
             return [];
         }
 
-        console.log('👀 Respuesta cruda de la IA:\n', datos.response);
-        console.log("RAW RESPONSE:");
-        console.log(datos.response);
+        const textoRespuesta = datos.candidates[0].content.parts[0].text;
+        console.log("👀 Respuesta cruda de Gemini:\n", textoRespuesta);
 
-        try {
-            const jsonProcesado = JSON.parse(datos.response);
-            const pedidos = normalizarPedidos(jsonProcesado.pedidos);
-            return pedidos;
-        } catch (e) {
-            console.error("No es un JSON válido:");
-            console.error(datos.response);
-            throw e;
-        }
-        //const jsonProcesado = JSON.parse(datos.response);
-        //const pedidos = normalizarPedidos(jsonProcesado.pedidos);
-
-        if (pedidos.length === 0) {
-            console.warn('⚠️ La IA no devolvió pedidos válidos.');
+        const jsonProcesado = JSON.parse(textoRespuesta);
+        
+        // Mantenemos tu DEFENSA TOTAL por si acaso
+        let arregloFinal = [];
+        if (Array.isArray(jsonProcesado)) {
+            arregloFinal = jsonProcesado; 
+        } else if (jsonProcesado.items && Array.isArray(jsonProcesado.items)) {
+            arregloFinal = jsonProcesado.items;
+        } else if (jsonProcesado.pedidos && Array.isArray(jsonProcesado.pedidos)) {
+            arregloFinal = jsonProcesado.pedidos;
+        } else if (typeof jsonProcesado === 'object' && jsonProcesado.item) {
+            arregloFinal = [jsonProcesado]; 
         }
 
-        return pedidos;
+        return arregloFinal;
+
     } catch (error) {
         console.error('❌ Error extrayendo el pedido con IA:', error.message);
         return [];
