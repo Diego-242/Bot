@@ -3,6 +3,7 @@ node_modules/
 test_get.js
 test.js
 package-lock.json
-limit.js
+limit.mjs
 README.md
 *.gitignore
+credentials.json
