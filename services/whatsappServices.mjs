@@ -11,7 +11,7 @@ export const enviarMensaje = async (numeroDestino, texto) => {
     }
 
     try {
-        const url = `https://graph.facebook.com/v19.0/${PHONE_ID}/messages`;
+        const url = `https://graph.facebook.com/v26.0/${PHONE_ID}/messages`;
         
         const respuesta = await fetch(url, {
             method: 'POST',
@@ -45,7 +45,7 @@ export const enviarBotones = async (numeroDestino, texto, botones) => {
     }
 
     try {
-        const url = `https://graph.facebook.com/v19.0/${PHONE_ID}/messages`;
+        const url = `https://graph.facebook.com/v26.0/${PHONE_ID}/messages`;
         
         // Formateamos los botones al estándar estricto de Meta
         const botonesFormateados = botones.map(boton => ({
@@ -95,7 +95,7 @@ export const enviarDocumento = async (numeroDestino, urlDocumento, nombreArchivo
     }
 
     try {
-        const url = `https://graph.facebook.com/v19.0/${PHONE_ID}/messages`;
+        const url = `https://graph.facebook.com/v26.0/${PHONE_ID}/messages`;
         
         const respuesta = await fetch(url, {
             method: 'POST',

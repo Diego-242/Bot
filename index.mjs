@@ -38,6 +38,11 @@ const webhookLimiter = rateLimit({
 });
 
 
+app.get('/', webhookLimiter,(req, res) => {
+    res.status(200).send("Servidor del bot de WhatsApp activo y corriendo.");
+    console.log(`📥 Solicitud recibida`);
+})
+
 app.use('/webhook', webhookLimiter, webhookRoutes);
 
 app.listen(PORT, () => {    

@@ -1,9 +1,9 @@
 node_modules/
+.env
 *.env
 test_get.js
 test.js
+testBot.js
 package-lock.json
 limit.mjs
-README.md
-*.gitignore
 credentials.json
